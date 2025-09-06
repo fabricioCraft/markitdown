@@ -1,17 +1,39 @@
 version: "3.8"
+
 services:
+  # O nome do nosso serviço dentro do Swarm
   markitdown_mcp:
-    image: evolutta/markitdown-mcp:1.0
-    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
-    command: --sse --host 0.0.0.0 --port 3001
+    
+    # 1. NOME DA IMAGEM: Damos um nome para a imagem que será construída localmente.
+    #    Isso não tenta baixar nada, apenas etiqueta o resultado da construção.
+    image: evolutta/markitdown-api:1.0
+
+    # 2. CONSTRUÇÃO (BUILD): Esta é a instrução mais importante.
+    #    Ela diz ao Portainer: "Ignore o Docker Hub. Use o Dockerfile que está
+    #    neste repositório para construir a imagem do zero."
+    build: .
+
+    # 3. PORTAS: Expondo a porta do nosso servidor web.
+    #    O Uvicorn roda na porta 8000 DENTRO do contêiner.
+    #    Mapeamos a porta 8001 da sua VPS para a porta 8000 do contêiner.
+    ports:
+      - "8001:8000"
+
+    # 4. REDE: Conecta o serviço à sua rede Swarm existente.
+    #    Isso é essencial para que o n8n possa encontrá-lo.
     networks:
       - network_swarm_public
+
+    # 5. DEPLOY: Mantemos as boas práticas de deploy em Swarm.
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints:
           - node.role == manager
+
+# 6. DEFINIÇÃO DA REDE: Declara que 'network_swarm_public' é uma rede
+#    externa que já foi criada no Docker Swarm.
 networks:
   network_swarm_public:
     name: network_swarm_public
