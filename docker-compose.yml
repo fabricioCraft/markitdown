@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  markitdown:
+    image: evolutta/markitdown:1.0 # Dê um nome único para sua imagem
+    build: .
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
