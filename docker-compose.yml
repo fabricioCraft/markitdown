@@ -2,9 +2,20 @@ version: '3.8'
 
 services:
   markitdown:
-    image: evolutta/markitdown:1.0 # Dê um nome único para sua imagem
+    image: evolutta/markitdown-api:1.0
     build: .
+    ports:
+      - "8001:8000"
+    networks:
+      - network_swarm_public
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  network_swarm_public:
+    external: true
