@@ -1,7 +1,7 @@
-# MANTIDO - Mesma imagem base
+# Usa a imagem Python oficial como base
 FROM python:3.13-slim-bullseye
 
-# MANTIDO - Variáveis de ambiente e dependências do sistema
+# Mantém as variáveis e dependências originais do markitdown
 ENV DEBIAN_FRONTEND=noninteractive
 ENV EXIFTOOL_PATH=/usr/bin/exiftool
 ENV FFMPEG_PATH=/usr/bin/ffmpeg
@@ -15,27 +15,31 @@ RUN if [ "$INSTALL_GIT" = "true" ]; then \
     fi
 RUN rm -rf /var/lib/apt/lists/*
 
-# MANTIDO - Diretório de trabalho e cópia do código
+# Define o diretório de trabalho e copia todo o código do seu repositório para dentro da imagem
 WORKDIR /app
 COPY . /app
 
-# MANTIDO - Instalação do markitdown e seus plugins
+# Instala o markitdown e seus plugins a partir do código que acabamos de copiar
 RUN pip --no-cache-dir install \
     /app/packages/markitdown[all] \
     /app/packages/markitdown-sample-plugin
 
-# ADICIONADO - Instalação das dependências do nosso servidor web
+# ADICIONADO: Instala as dependências do nosso servidor web (FastAPI e Uvicorn)
 RUN pip --no-cache-dir install fastapi uvicorn python-multipart
 
-# MANTIDO - Prática de segurança para rodar como usuário não-root
+# Define os argumentos para o usuário e grupo (boa prática de segurança)
 ARG USERID=nobody
 ARG GROUPID=nogroup
+
+# CORREÇÃO CRÍTICA: Antes de trocar para o usuário não-root, mudamos o proprietário
+# de todos os arquivos da aplicação. Isso garante que o usuário 'nobody' terá
+# permissão para ler e executar o nosso api_server.py.
+RUN chown -R $USERID:$GROUPID /app
+
+# Troca para o usuário com privilégios mínimos para executar a aplicação
 USER $USERID:$GROUPID
 
-# ALTERADO - O comando de execução final.
-# Em vez de iniciar o CLI 'markitdown', iniciamos nosso servidor web 'uvicorn'.
-# O servidor executará o arquivo 'api_server.py' e a aplicação 'app' contida nele.
+# COMANDO FINAL: Em vez de iniciar o CLI, inicia o servidor web Uvicorn.
+# Ele irá rodar o objeto 'app' de dentro do arquivo 'api_server.py'.
+# '--host 0.0.0.0' torna o servidor acessível de fora do contêiner.
 CMD ["uvicorn", "api_server:app", "--host", "0.0.0.0", "--port", "8000"]
-
-# REMOVIDO - O ENTRYPOINT original é substituído pelo CMD acima.
-# ENTRYPOINT [ "markitdown" ]
